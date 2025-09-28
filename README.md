@@ -53,26 +53,69 @@ This guide will walk you through installing everything from scratch on a fresh W
 Under **Web Server (IIS)** → **Web Server** → **Application Development**, select:
 
 - ✅ **ASP.NET 4.8** (and all dependencies)
+  - *Required for .NET application support and compatibility layers*
+  - *Provides the foundation for running .NET applications on IIS*
+  
 - ✅ **.NET Extensibility 4.8**
+  - *Enables IIS to load and execute .NET Framework applications*
+  - *Required for ASP.NET Core applications running in-process*
+  
 - ✅ **ISAPI Extensions**
+  - *Allows IIS to execute dynamic content through Internet Server Application Programming Interface*
+  - *Required for ASP.NET Core Module (ANCM) to function properly*
+  
 - ✅ **ISAPI Filters**
+  - *Enables request processing filters that can modify HTTP requests/responses*
+  - *Needed for advanced ASP.NET Core features and middleware*
+  
 - ✅ **WebSocket Protocol**
+  - *Enables real-time, bidirectional communication between client and server*
+  - *Required for Blazor Server SignalR connections and real-time features*
 
 Under **Web Server (IIS)** → **Web Server** → **Common HTTP Features**, ensure selected:
 
 - ✅ **Default Document**
+  - *Allows IIS to serve a default file (like index.html) when no specific file is requested*
+  - *Useful for serving your Blazor application's main page*
+  
 - ✅ **Directory Browsing**
+  - *Enables browsing folder contents when no default document exists*
+  - *Helpful for troubleshooting and serving static assets*
+  
 - ✅ **HTTP Errors**
+  - *Provides custom error pages for HTTP status codes (404, 500, etc.)*
+  - *Essential for proper error handling and user experience*
+  
 - ✅ **HTTP Redirection**
+  - *Enables URL redirection (HTTP to HTTPS, old URLs to new ones)*
+  - *Important for security (forcing HTTPS) and SEO*
+  
 - ✅ **Static Content**
+  - *Serves static files like CSS, JavaScript, images, and fonts*
+  - *Required for your Blazor application's static assets (wwwroot folder)*
 
 Under **Web Server (IIS)** → **Web Server** → **Security**, ensure selected:
 
 - ✅ **Request Filtering**
+  - *Filters incoming requests based on rules (file extensions, request size, etc.)*
+  - *Provides security by blocking potentially malicious requests*
+  - *Helps prevent common web attacks and reduces attack surface*
+
+Under **Web Server (IIS)** → **Web Server** → **Performance**, consider adding:
+
+- ✅ **Dynamic Content Compression** (Optional but recommended)
+  - *Compresses dynamic content (like API responses) to reduce bandwidth*
+  - *Improves performance for API calls between frontend and backend*
+  
+- ✅ **Static Content Compression** (Optional but recommended)
+  - *Compresses static files (CSS, JS) to reduce download time*
+  - *Significantly improves page load times for your Blazor application*
 
 Under **Web Server (IIS)** → **Management Tools**, ensure selected:
 
 - ✅ **IIS Management Console**
+  - *Provides the graphical interface to configure and manage IIS*
+  - *Essential for creating websites, application pools, and SSL bindings*
 
 1. Click **Next** → **Install**
 2. **Restart the server** after installation completes
@@ -91,31 +134,53 @@ Start-Process "http://localhost"
 
 ### 1.2 Install Visual C++ Redistributables (Required for .NET and PostgreSQL)
 
+**Why Visual C++ Redistributables are needed:**
+
+- **.NET Runtime Dependency:** .NET 9 applications require Visual C++ runtime libraries to function
+- **PostgreSQL Requirement:** PostgreSQL uses Visual C++ libraries for database operations
+- **System Compatibility:** Ensures all native code components work properly on Windows Server
+- **Both Architectures Needed:** x64 for main applications, x86 for potential legacy components
+
 **Download and Install:**
 
 1. **Microsoft Visual C++ 2015-2022 Redistributable (x64)**
    - Download from: <https://aka.ms/vs/17/release/vc_redist.x64.exe>
    - Run the installer and follow the setup wizard
+   - *This version supports your .NET 9 Backend API and Frontend UI applications*
 
 2. **Microsoft Visual C++ 2015-2022 Redistributable (x86)**
    - Download from: <https://aka.ms/vs/17/release/vc_redist.x86.exe>  
    - Run the installer and follow the setup wizard
+   - *This provides compatibility for any 32-bit components or dependencies*
 
 3. **Restart the server** after both installations complete
+   - *Required to ensure all system services recognize the new runtime libraries*
 
 ### 1.3 Install .NET 9 Runtime and Hosting Bundle
+
+**Why .NET 9 Hosting Bundle is needed:**
+
+- **ASP.NET Core Runtime:** Contains the runtime needed to execute your .NET 9 applications
+- **ASP.NET Core Module (ANCM):** Integrates ASP.NET Core with IIS for in-process hosting
+- **Shared Framework:** Provides all the libraries your Integral application depends on
+- **IIS Integration:** Enables IIS to properly host and manage .NET 9 applications
+- **Production Optimized:** Includes performance optimizations for production environments
 
 **Download .NET 9 Hosting Bundle:**
 
 1. Open a web browser and navigate to: <https://dotnet.microsoft.com/download/dotnet/9.0>
 2. Under **ASP.NET Core Runtime 9.0.x**, click **Download Hosting Bundle** (Windows x64)
+   - *This bundle includes both the runtime and IIS integration components*
 3. Save the file (typically named `dotnet-hosting-9.x.x-win.exe`) to the server
 
 **Install the Hosting Bundle:**
 
 1. Run the downloaded installer as Administrator
+   - *Administrator rights required to install system-level components and IIS modules*
 2. Follow the installation wizard (accept defaults)
+   - *Default settings are optimized for production hosting scenarios*
 3. **Important:** Restart IIS after installation:
+   - *Required for IIS to recognize the new ASP.NET Core Module*
 
 ```powershell
 # Open PowerShell as Administrator
@@ -132,8 +197,8 @@ dotnet --info
 dotnet --list-runtimes
 
 # You should see something like:
-# Microsoft.AspNetCore.App 9.x.x
-# Microsoft.NETCore.App 9.x.x
+# Microsoft.AspNetCore.App 9.x.x [Runtime for ASP.NET Core applications]
+# Microsoft.NETCore.App 9.x.x [Base .NET runtime]
 ```
 
 ### 1.4 Enable Additional Windows Features (PowerShell Method)
