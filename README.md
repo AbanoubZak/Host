@@ -33,6 +33,8 @@ This guide will walk you through installing everything from scratch on a fresh W
 
 **Estimated Total Installation Time:** 45-60 minutes
 
+**Installation Method:** This guide uses **GUI-based installation** through Server Manager and installers for clarity and ease of use. PowerShell commands are provided only for verification and troubleshooting.
+
 ---
 
 ## Step 1: Windows Server 2019 Standard Prerequisites
@@ -201,58 +203,20 @@ dotnet --list-runtimes
 # Microsoft.NETCore.App 9.x.x [Base .NET runtime]
 ```
 
-### 1.4 Enable Additional Windows Features (PowerShell Method)
+### 1.4 Additional Windows Features (If Needed)
 
-**Run PowerShell as Administrator and execute:**
+**Note:** The IIS features should already be installed via Server Manager in Step 1.1. Only use this PowerShell method if the UI installation failed or if you need to add specific features later.
 
-**Download and Install .NET 9 Runtime:**
-
-1. Download the latest .NET 9 Hosting Bundle from: <https://dotnet.microsoft.com/download/dotnet/9.0>
-2. Run the installer: `dotnet-hosting-9.x.x-win.exe`
-3. Restart IIS after installation:
-
-   ```powershell
-   net stop was /y
-   net start w3svc
-   ```
-
-**Verify Installation:**
+**Run PowerShell as Administrator (only if needed):**
 
 ```powershell
-dotnet --info
-dotnet --list-runtimes
+# Verify IIS features are installed
+Get-WindowsFeature -Name IIS-* | Where-Object {$_.InstallState -eq "Installed"}
+
+# If any required features are missing, you can install them individually:
+# Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebSockets
+# Enable-WindowsOptionalFeature -Online -FeatureName IIS-ASPNET48
 ```
-
-### 1.2 Enable Windows Features
-
-**Using PowerShell (Run as Administrator):**
-
-```powershell
-# Enable IIS and ASP.NET Core features
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServer
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-CommonHttpFeatures
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpErrors
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpLogging
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-Security
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-RequestFiltering
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-StaticContent
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-DefaultDocument
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-DirectoryBrowsing
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebSockets
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-ApplicationDevelopment
-Enable-WindowsOptionalFeature -Online -FeatureName IIS-ASPNET45
-
-# Restart required
-Restart-Computer
-```
-
-### 1.3 Install Visual C++ Redistributables
-
-Download and install both x64 and x86 versions:
-
-- Microsoft Visual C++ 2015-2022 Redistributable (x64)
-- Microsoft Visual C++ 2015-2022 Redistributable (x86)
 
 ---
 
