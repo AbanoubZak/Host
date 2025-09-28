@@ -1,19 +1,6 @@
-# Comprehensive Hosting Guide: Integral Solution on Windows Server 2019 Standard
-
 ## Table of Contents
 
-### Quick Navigation
-
-- [Overview](#overview)
-- [Installation Order Summary](#installation-order-summary)
-
-### Step-by-Step Installation
-
 - [Comprehensive Hosting Guide: Integral Solution on Windows Server 2019 Standard](#comprehensive-hosting-guide-integral-solution-on-windows-server-2019-standard)
-  - [Table of Contents](#table-of-contents)
-    - [Quick Navigation](#quick-navigation)
-    - [Step-by-Step Installation](#step-by-step-installation)
-    - [Testing and Troubleshooting](#testing-and-troubleshooting)
     - [Overview](#overview)
   - [Installation Order Summary](#installation-order-summary)
   - [Step 1: Windows Server 2019 Standard Prerequisites](#step-1-windows-server-2019-standard-prerequisites)
@@ -61,17 +48,9 @@
     - [Database Connection (Server Only)](#database-connection-server-only)
   - [Additional Recommendations](#additional-recommendations)
 
-### Testing and Troubleshooting
-
-- [Testing and Verification](#testing-and-verification)
-  - [6.1 Test Backend API](#61-test-backend-api)
-  - [6.2 Test Frontend Application](#62-test-frontend-application)
-  - [6.3 Distribute SSL Certificates](#63-distribute-ssl-certificates-to-client-computers)
-- [Troubleshooting Common Issues](#troubleshooting-common-issues)
-- [Access URLs Summary](#access-urls-summary)
-- [Additional Recommendations](#additional-recommendations)
-
 ---
+
+# Comprehensive Hosting Guide: Integral Solution on Windows Server 2019 Standard
 
 ### Overview
 
