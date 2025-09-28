@@ -1,5 +1,78 @@
 # Comprehensive Hosting Guide: Integral Solution on Windows Server 2019 Standard
 
+## Table of Contents
+
+### Quick Navigation
+
+- [Overview](#overview)
+- [Installation Order Summary](#installation-order-summary)
+
+### Step-by-Step Installation
+
+- [Comprehensive Hosting Guide: Integral Solution on Windows Server 2019 Standard](#comprehensive-hosting-guide-integral-solution-on-windows-server-2019-standard)
+  - [Table of Contents](#table-of-contents)
+    - [Quick Navigation](#quick-navigation)
+    - [Step-by-Step Installation](#step-by-step-installation)
+    - [Testing and Troubleshooting](#testing-and-troubleshooting)
+    - [Overview](#overview)
+  - [Installation Order Summary](#installation-order-summary)
+  - [Step 1: Windows Server 2019 Standard Prerequisites](#step-1-windows-server-2019-standard-prerequisites)
+    - [1.1 Install IIS (Internet Information Services)](#11-install-iis-internet-information-services)
+    - [1.2 Install Visual C++ Redistributables (Required for .NET and PostgreSQL)](#12-install-visual-c-redistributables-required-for-net-and-postgresql)
+    - [1.3 Install .NET 9 Runtime and Hosting Bundle](#13-install-net-9-runtime-and-hosting-bundle)
+    - [1.4 Additional Windows Features (If Needed)](#14-additional-windows-features-if-needed)
+  - [Step 2: PostgreSQL Installation and Configuration](#step-2-postgresql-installation-and-configuration)
+    - [2.1 Download and Install PostgreSQL](#21-download-and-install-postgresql)
+    - [2.2 Configure PostgreSQL Service](#22-configure-postgresql-service)
+    - [2.3 Create Database and User](#23-create-database-and-user)
+    - [2.4 Configure PostgreSQL Security](#24-configure-postgresql-security)
+  - [Step 3: IIS Configuration](#step-3-iis-configuration)
+    - [3.1 Create Application Pools](#31-create-application-pools)
+    - [3.2 Create Websites and Applications](#32-create-websites-and-applications)
+    - [3.3 Configure ASP.NET Core Module](#33-configure-aspnet-core-module)
+  - [Step 4: Application Deployment](#step-4-application-deployment)
+    - [4.1 Prepare for Production Deployment](#41-prepare-for-production-deployment)
+    - [4.2 Publish Applications](#42-publish-applications)
+    - [4.3 Deploy to Windows Server](#43-deploy-to-windows-server)
+    - [4.4 Database Migration](#44-database-migration)
+    - [4.5 Configure Environment Variables](#45-configure-environment-variables)
+  - [Step 5: Security and Maintenance](#step-5-security-and-maintenance)
+    - [5.1 Custom Local Domains and SSL Configuration](#51-custom-local-domains-and-ssl-configuration)
+      - [5.1.1 Configure Custom Local Domains](#511-configure-custom-local-domains)
+      - [5.1.2 Generate Free Local SSL Certificates](#512-generate-free-local-ssl-certificates)
+      - [5.1.3 Configure HTTPS Bindings in IIS](#513-configure-https-bindings-in-iis)
+    - [5.2 Windows Firewall Configuration](#52-windows-firewall-configuration)
+    - [5.3 Security Hardening](#53-security-hardening)
+    - [5.4 Monitoring and Maintenance](#54-monitoring-and-maintenance)
+    - [5.5 Backup Strategy](#55-backup-strategy)
+  - [Testing and Verification](#testing-and-verification)
+    - [6.1 Test Backend API](#61-test-backend-api)
+    - [6.2 Test Frontend Application](#62-test-frontend-application)
+    - [6.3 Distribute SSL Certificates to Client Computers](#63-distribute-ssl-certificates-to-client-computers)
+    - [6.3 Test Database Connectivity](#63-test-database-connectivity)
+  - [Troubleshooting Common Issues](#troubleshooting-common-issues)
+    - [Issue 1: 500.30 ASP.NET Core app failed to start](#issue-1-50030-aspnet-core-app-failed-to-start)
+    - [Issue 2: Database Connection Fails](#issue-2-database-connection-fails)
+    - [Issue 3: JWT Authentication Issues](#issue-3-jwt-authentication-issues)
+    - [Issue 4: Static Files Not Serving](#issue-4-static-files-not-serving)
+  - [Access URLs Summary](#access-urls-summary)
+    - [Local Server Access](#local-server-access)
+    - [Network Access from Other Computers](#network-access-from-other-computers)
+    - [Database Connection (Server Only)](#database-connection-server-only)
+  - [Additional Recommendations](#additional-recommendations)
+
+### Testing and Troubleshooting
+
+- [Testing and Verification](#testing-and-verification)
+  - [6.1 Test Backend API](#61-test-backend-api)
+  - [6.2 Test Frontend Application](#62-test-frontend-application)
+  - [6.3 Distribute SSL Certificates](#63-distribute-ssl-certificates-to-client-computers)
+- [Troubleshooting Common Issues](#troubleshooting-common-issues)
+- [Access URLs Summary](#access-urls-summary)
+- [Additional Recommendations](#additional-recommendations)
+
+---
+
 ### Overview
 
 Your Integral solution uses .NET 9 with Clean Architecture, featuring:
@@ -275,6 +348,37 @@ After PostgreSQL installation completes, Stack Builder will launch automatically
 
 1. Click **Next** → **Download** → **Install** for selected components
 2. Complete the installation
+
+**Configure pgAgent (if selected):**
+
+If you chose to install pgAgent, you'll see a "PostgreSQL Installation Details" configuration screen. Fill in these values:
+
+1. **Host:** `localhost`
+   - *This is the PostgreSQL server address - use localhost since it's on the same machine*
+
+2. **User Name:** `postgres`
+   - *Use the PostgreSQL superuser account to create pgAgent database objects*
+   - *This is the same username you used during PostgreSQL installation*
+
+3. **Password:** `[Your PostgreSQL superuser password]`
+   - *Enter the strong password you created during PostgreSQL installation*
+   - *This is the same password you wrote down earlier*
+
+4. **Port:** `5432`
+   - *This should already be filled in - it's the default PostgreSQL port*
+   - *Leave this as 5432 unless you changed it during PostgreSQL installation*
+
+5. **Important Notes:**
+   - ✅ **Leave "Upgrade Mode" UNCHECKED** (as discussed earlier)
+   - ✅ Click **Next** to proceed with pgAgent installation
+   - ✅ pgAgent will create its required database objects and schemas
+
+**What pgAgent Setup Does:**
+
+- Creates the `pgagent` database schema for job management
+- Installs stored procedures for scheduling tasks
+- Sets up the pgAgent Windows service for background job execution
+- Configures database objects needed for automated maintenance tasks
 
 **Why These Components for Integral Application:**
 
