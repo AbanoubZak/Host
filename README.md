@@ -227,15 +227,15 @@ Get-WindowsFeature -Name IIS-* | Where-Object {$_.InstallState -eq "Installed"}
 **Download PostgreSQL:**
 
 1. Open a web browser and navigate to: <https://www.postgresql.org/download/windows/>
-2. Click **Download the installer** → **Download** for the latest PostgreSQL 16.x version
-3. Save the installer (typically named `postgresql-16.x-x-windows-x64.exe`) to the server
+2. Click **Download the installer** → **Download** for the latest PostgreSQL 17.x version
+3. Save the installer (typically named `postgresql-17.x-x-windows-x64.exe`) to the server
 
 **Run the PostgreSQL Installer:**
 
 1. **Right-click** the installer and select **Run as administrator**
 2. Follow the installation wizard with these recommended settings:
-   - **Installation Directory:** `C:\Program Files\PostgreSQL\16` (default)
-   - **Data Directory:** `C:\Program Files\PostgreSQL\16\data` (default)
+   - **Installation Directory:** `C:\Program Files\PostgreSQL\17` (default)
+   - **Data Directory:** `C:\Program Files\PostgreSQL\17\data` (default)
    - **Password:** Enter a **strong password** for the postgres superuser (write this down!)
    - **Port:** `5432` (default)
    - **Locale:** `English, United States` (default)
@@ -249,12 +249,12 @@ After PostgreSQL installation completes, Stack Builder will launch automatically
 
 **In Stack Builder, select the components needed for your Integral application:**
 
-1. **Database Server:** Select your installed **PostgreSQL 16.x** version
+1. **Database Server:** Select your installed **PostgreSQL 17.x** version
 
 2. **Categories → Add-ons, tools and utilities:**
    - ✅ **pgAgent** (Optional - for scheduled database tasks)
      - *Useful if you plan to run automated database maintenance or backups*
-   
+
 3. **Categories → Database Drivers:**
    - ✅ **Npgsql** (if available)
      - *PostgreSQL .NET driver - though this is usually included with .NET applications*
@@ -278,7 +278,7 @@ After PostgreSQL installation completes, Stack Builder will launch automatically
 
 **Why These Components for Integral Application:**
 
-- **PostgreSQL 16.x Core Database:** Required for your application's data storage
+- **PostgreSQL 17.x Core Database:** Required for your application's data storage
 - **pgAdmin** (usually included): Web-based database administration tool
 - **pgAgent** (optional): For automated database maintenance tasks like backups
 - **Skip Spatial Extensions:** Your business application doesn't need GIS features
@@ -310,8 +310,8 @@ Get-Service -Name postgresql*
 
 ```powershell
 # Set service to start automatically
-Set-Service -Name postgresql-x64-16 -StartupType Automatic
-Start-Service -Name postgresql-x64-16
+Set-Service -Name postgresql-x64-17 -StartupType Automatic
+Start-Service -Name postgresql-x64-17
 ```
 
 ### 2.3 Create Database and User
@@ -320,7 +320,7 @@ Start-Service -Name postgresql-x64-16
 
 ```powershell
 # Open PostgreSQL command line
-cd "C:\Program Files\PostgreSQL\16\bin"
+cd "C:\Program Files\PostgreSQL\17\bin"
 .\psql.exe -U postgres
 ```
 
@@ -358,7 +358,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO i
 
 ```powershell
 # Open configuration file
-notepad "C:\Program Files\PostgreSQL\16\data\pg_hba.conf"
+notepad "C:\Program Files\PostgreSQL\17\data\pg_hba.conf"
 ```
 
 **Add these lines for local connections only:**
@@ -377,7 +377,7 @@ host    all             all             0.0.0.0/0               reject
 **Restart PostgreSQL:**
 
 ```powershell
-Restart-Service -Name postgresql-x64-16
+Restart-Service -Name postgresql-x64-17
 ```
 
 ---
@@ -836,7 +836,7 @@ $date = Get-Date -Format "yyyyMMdd_HHmmss"
 $backupFile = "$backupPath\integral_db_$date.sql"
 
 # Run PostgreSQL backup
-& "C:\Program Files\PostgreSQL\16\bin\pg_dump.exe" -U integral_user -h localhost -d integral_db -f $backupFile
+& "C:\Program Files\PostgreSQL\17\bin\pg_dump.exe" -U integral_user -h localhost -d integral_db -f $backupFile
 ```
 
 **Application Backup:**
