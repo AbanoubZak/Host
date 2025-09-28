@@ -239,9 +239,58 @@ Get-WindowsFeature -Name IIS-* | Where-Object {$_.InstallState -eq "Installed"}
    - **Password:** Enter a **strong password** for the postgres superuser (write this down!)
    - **Port:** `5432` (default)
    - **Locale:** `English, United States` (default)
-   - **Stack Builder:** Uncheck (not needed for basic installation)
+   - **Stack Builder:** **Check this box** (we'll configure additional components)
 3. Click **Next** and **Install**
 4. Wait for installation to complete (may take several minutes)
+
+**Configure Stack Builder (Additional Components):**
+
+After PostgreSQL installation completes, Stack Builder will launch automatically. If not, you can run it from the Start Menu.
+
+**In Stack Builder, select the components needed for your Integral application:**
+
+1. **Database Server:** Select your installed **PostgreSQL 16.x** version
+
+2. **Categories → Add-ons, tools and utilities:**
+   - ✅ **pgAgent** (Optional - for scheduled database tasks)
+     - *Useful if you plan to run automated database maintenance or backups*
+   
+3. **Categories → Database Drivers:**
+   - ✅ **Npgsql** (if available)
+     - *PostgreSQL .NET driver - though this is usually included with .NET applications*
+
+4. **Categories → Web Development:** (Skip all - not needed for your application)
+   - ❌ **PEM-HTTP** - Not needed for Integral
+   - ❌ **PostGIS Bundle** - Not needed unless you're working with geographical data
+
+5. **Skip these sections** (not needed for your business application):
+   - **Spatial Extensions** - Only needed for GIS applications
+   - **Registration-required and trial products** - Enterprise tools not needed
+
+**Recommended Selection for Integral Application:**
+
+- **Minimal installation** is sufficient
+- **pgAgent** only if you want scheduled database tasks
+- **Skip** all spatial extensions, web development tools, and enterprise components
+
+1. Click **Next** → **Download** → **Install** for selected components
+2. Complete the installation
+
+**Why These Components for Integral Application:**
+
+- **PostgreSQL 16.x Core Database:** Required for your application's data storage
+- **pgAdmin** (usually included): Web-based database administration tool
+- **pgAgent** (optional): For automated database maintenance tasks like backups
+- **Skip Spatial Extensions:** Your business application doesn't need GIS features
+- **Skip Web Development Tools:** Your .NET application handles web functionality
+- **Skip Enterprise Tools:** Not needed for single-server deployment
+
+**What You DON'T Need:**
+
+- PostGIS Bundle (geographical data)
+- PEM-HTTP (web management - you have IIS)
+- Spatial Extensions (mapping features)
+- Enterprise Manager tools (complex deployments only)
 
 **Important Notes:**
 
