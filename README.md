@@ -1,8 +1,27 @@
 ## Table of Contents
 
 - [Comprehensive Hosting Guide: Integral Solution on Windows Server 2019 Standard](#comprehensive-hosting-guide-integral-solution-on-windows-server-2019-standard)
-    - [Overview](#overview)
+  - [Overview](#overview)
+  - [.NET Aspire Production Status ✅](#net-aspire-production-status-)
+    - [Hybrid Deployment Strategy](#hybrid-deployment-strategy)
+    - [Why Hybrid Instead of Pure Aspire Hosting?](#why-hybrid-instead-of-pure-aspire-hosting)
   - [Installation Order Summary](#installation-order-summary)
+  - [Optional: .NET Aspire Integration](#optional-net-aspire-integration)
+    - [Benefits of Adding Aspire to Your Integral Solution](#benefits-of-adding-aspire-to-your-integral-solution)
+    - [Adding Aspire to Your Existing Integral Solution](#adding-aspire-to-your-existing-integral-solution)
+    - [Production Deployment Strategy](#production-deployment-strategy)
+      - [Option 1: Traditional IIS Deployment (Recommended for Windows Server)](#option-1-traditional-iis-deployment-recommended-for-windows-server)
+      - [Option 2: Aspire Manifest Deployment (Cloud/Container)](#option-2-aspire-manifest-deployment-cloudcontainer)
+      - [Option 3: Single Container with YARP (Advanced)](#option-3-single-container-with-yarp-advanced)
+    - [Practical Example: How To Deploy Your Integral Solution](#practical-example-how-to-deploy-your-integral-solution)
+      - [Step A: What Your Development Structure Looks Like](#step-a-what-your-development-structure-looks-like)
+      - [Step B: What Gets Published and Deployed](#step-b-what-gets-published-and-deployed)
+      - [Step C: IIS Configuration](#step-c-iis-configuration)
+      - [Step D: How Communication Works](#step-d-how-communication-works)
+    - [Configuration Changes for IIS Deployment](#configuration-changes-for-iis-deployment)
+      - [Backend API Configuration Changes](#backend-api-configuration-changes)
+      - [Frontend UI Configuration Changes](#frontend-ui-configuration-changes)
+      - [Service Registration Updates](#service-registration-updates)
   - [Step 1: Windows Server 2019 Standard Prerequisites](#step-1-windows-server-2019-standard-prerequisites)
     - [1.1 Install IIS (Internet Information Services)](#11-install-iis-internet-information-services)
     - [1.2 Install Visual C++ Redistributables (Required for .NET and PostgreSQL)](#12-install-visual-c-redistributables-required-for-net-and-postgresql)
@@ -36,7 +55,8 @@
     - [6.1 Test Backend API](#61-test-backend-api)
     - [6.2 Test Frontend Application](#62-test-frontend-application)
     - [6.3 Distribute SSL Certificates to Client Computers](#63-distribute-ssl-certificates-to-client-computers)
-    - [6.3 Test Database Connectivity](#63-test-database-connectivity)
+    - [6.4 Optional: Monitor Production with Aspire Dashboard](#64-optional-monitor-production-with-aspire-dashboard)
+    - [6.5 Test Database Connectivity](#65-test-database-connectivity)
   - [Troubleshooting Common Issues](#troubleshooting-common-issues)
     - [Issue 1: 500.30 ASP.NET Core app failed to start](#issue-1-50030-aspnet-core-app-failed-to-start)
     - [Issue 2: Database Connection Fails](#issue-2-database-connection-fails)
@@ -60,6 +80,24 @@ Your Integral solution uses .NET 9 with Clean Architecture, featuring:
 - Blazor Server frontend with role-based permissions
 - PostgreSQL database with EF Core migrations
 - Advanced authentication system with session management
+- **Optional**: .NET Aspire integration for enhanced development and monitoring
+
+## .NET Aspire Production Status ✅
+
+**Good News**: .NET Aspire 9.5 (released September 2025) is **production-ready** with official Microsoft support. However, for Windows Server IIS hosting, we recommend a **hybrid approach**:
+
+### Hybrid Deployment Strategy
+
+1. **Development**: Use .NET Aspire for local orchestration and debugging
+2. **Production**: Deploy to IIS for optimal Windows Server performance
+3. **Best of Both**: Leverage Aspire's service defaults and integrations in IIS-hosted apps
+
+### Why Hybrid Instead of Pure Aspire Hosting?
+
+- **Aspire's Strength**: Container orchestration, cloud deployment, development tooling
+- **IIS Strength**: Windows Server integration, process management, production stability
+- **Your Scenario**: On-premises Windows Server without Docker requires IIS hosting
+- **Solution**: Use Aspire integrations within traditionally deployed applications
 
 **Prerequisites Status:**
 
@@ -67,8 +105,9 @@ Your Integral solution uses .NET 9 with Clean Architecture, featuring:
 - ❌ PostgreSQL Database Server - Not installed  
 - ❌ .NET 9 Runtime and Hosting Bundle - Not installed
 - ❌ Visual C++ Redistributables - May not be installed
+- 🟡 .NET Aspire CLI - Optional for enhanced development experience
 
-This guide will walk you through installing everything from scratch on a fresh Windows Server 2019 Standard installation.
+This guide provides **both approaches** - traditional IIS deployment (recommended for your scenario) plus optional Aspire integration for enhanced observability and development experience.
 
 ## Installation Order Summary
 
@@ -86,6 +125,347 @@ This guide will walk you through installing everything from scratch on a fresh W
 **Estimated Total Installation Time:** 45-60 minutes
 
 **Installation Method:** This guide uses **GUI-based installation** through Server Manager and installers for clarity and ease of use. PowerShell commands are provided only for verification and troubleshooting.
+
+---
+
+## Optional: .NET Aspire Integration
+
+### Benefits of Adding Aspire to Your Integral Solution
+
+While your production deployment will use IIS, integrating .NET Aspire provides significant benefits:
+
+**Development Experience:**
+
+- **Single Command Launch**: Start your entire distributed application with `aspire run`
+- **Unified Dashboard**: Monitor all services, logs, traces, and metrics in one place
+- **Service Discovery**: Automatic connection string management between services
+- **Container Management**: Automatically manage PostgreSQL and other dependencies
+
+**Production Benefits (Even on IIS):**
+
+- **Enhanced Telemetry**: Built-in OpenTelemetry integration
+- **Health Checks**: Standardized health endpoints
+- **Service Defaults**: Consistent logging, metrics, and configuration
+- **Better Monitoring**: Rich observability even in IIS-hosted apps
+
+### Adding Aspire to Your Existing Integral Solution
+
+**Step 1: Install Aspire CLI**
+
+```powershell
+# Windows PowerShell
+iex "& { $(irm https://aspire.dev/install.ps1) }"
+
+# Verify installation
+aspire --version
+```
+
+**Step 2: Add AppHost Project to Your Solution**
+
+```powershell
+# Navigate to your solution directory
+cd "D:\Private Projects\Integral"
+
+# Add Aspire AppHost project
+dotnet new aspire-apphost -n Integral.AspireHost
+
+# Add to solution
+dotnet sln add Integral.AspireHost\Integral.AspireHost.csproj
+```
+
+**Step 3: Update AppHost to Orchestrate Your Applications**
+
+Create `Integral.AspireHost\Program.cs`:
+
+```csharp
+var builder = DistributedApplication.CreateBuilder(args);
+
+// Add PostgreSQL database
+var postgres = builder.AddPostgres("postgres")
+    .WithDataVolume()
+    .AddDatabase("integral_db");
+
+// Add Backend API project
+var backendApi = builder.AddProject<Projects.Integral_Backend_API>("backend-api")
+    .WithReference(postgres)
+    .WaitFor(postgres);
+
+// Add Frontend UI project
+var frontendUI = builder.AddProject<Projects.Integral_Frontend_UI>("frontend-ui")
+    .WithReference(backendApi)
+    .WaitFor(backendApi);
+
+// Optional: Add Aspire Dashboard for monitoring
+builder.AddProject<Projects.Integral_AspireHost>("aspire-dashboard");
+
+builder.Build().Run();
+```
+
+**Step 4: Add Service Defaults to Your Projects**
+
+Add to both `Integral.Backend.API` and `Integral.Frontend.UI` projects:
+
+```xml
+<!-- Add to project files -->
+<PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.0" />
+```
+
+Update `Program.cs` in both projects:
+
+```csharp
+// Add this line early in Program.cs
+builder.AddServiceDefaults();
+
+// This automatically configures:
+// - OpenTelemetry logging, metrics, and tracing
+// - Health checks
+// - Service discovery
+// - HTTP client configurations
+```
+
+**Step 5: Development Workflow with Aspire**
+
+```powershell
+# Start entire application stack with Aspire
+cd "D:\Private Projects\Integral\Integral.AspireHost"
+aspire run
+
+# Or use existing workflow
+dotnet run --project Integral.AppHost
+```
+
+**Benefits You'll Get:**
+
+1. **Automatic PostgreSQL Container**: No need to install PostgreSQL locally
+2. **Unified Dashboard**: Access at `http://localhost:15888` to monitor all services
+3. **Service Discovery**: Backend API automatically discoverable by Frontend
+4. **Rich Telemetry**: Built-in logging, metrics, and distributed tracing
+5. **Health Monitoring**: Automatic health check endpoints
+
+### Production Deployment Strategy
+
+There are **three ways** to deploy .NET Aspire applications to production:
+
+#### Option 1: Traditional IIS Deployment (Recommended for Windows Server)
+
+**What gets deployed:**
+
+- ❌ **AppHost**: NEVER deployed to production (development tool only)
+- ✅ **Backend API**: Deployed as separate IIS application
+- ✅ **Frontend UI**: Deployed as separate IIS application  
+- ✅ **Service Defaults**: Included in each application for telemetry
+
+**IIS Structure:**
+
+```
+IIS Sites:
+├── Integral-Backend-API (Port 8080/8443)
+│   └── Physical Path: C:\inetpub\IntegralBackend\
+│   └── Contains: Published Backend API files
+├── Integral-Frontend-UI (Port 8081/8444)
+│   └── Physical Path: C:\inetpub\IntegralFrontend\
+│   └── Contains: Published Frontend UI files
+└── Optional: Integral-Dashboard (Port 8445)
+    └── Physical Path: C:\inetpub\IntegralDashboard\
+    └── Contains: Aspire Dashboard for monitoring
+```
+
+#### Option 2: Aspire Manifest Deployment (Cloud/Container)
+
+**For Azure Container Apps, Kubernetes, etc:**
+
+- AppHost generates deployment manifest
+- Each project becomes a separate container/service
+- Use `aspire manifest` command to generate deployment files
+
+#### Option 3: Single Container with YARP (Advanced)
+
+**Consolidate everything into one deployment:**
+
+- Use YARP reverse proxy integration
+- Single IIS application with internal routing
+- More complex but single deployment point
+
+---
+
+### Practical Example: How To Deploy Your Integral Solution
+
+Let me show you **exactly** what gets deployed where:
+
+#### Step A: What Your Development Structure Looks Like
+
+```text
+Integral.sln
+├── Integral.AppHost/                    # ← DEVELOPMENT ONLY
+│   ├── Program.cs                       # ← Orchestration code
+│   └── Integral.AppHost.csproj
+├── Integral.Backend.API/                # ← DEPLOYED TO IIS
+│   ├── Program.cs (with AddServiceDefaults)
+│   └── Controllers, Services, etc.
+├── Integral.Frontend.UI/                # ← DEPLOYED TO IIS
+│   ├── Program.cs (with AddServiceDefaults)
+│   └── Pages, Components, etc.
+└── Database Scripts/                    # ← RUN MANUALLY ON SERVER
+```
+
+#### Step B: What Gets Published and Deployed
+
+**Publish Commands (Run on Development Machine):**
+
+```powershell
+# Publish Backend API
+dotnet publish Integral.Backend.API -c Release -o ./publish/backend
+
+# Publish Frontend UI  
+dotnet publish Integral.Frontend.UI -c Release -o ./publish/frontend
+
+# Note: AppHost is NEVER published for production
+```
+
+**Deployment Structure on Windows Server:**
+
+```text
+Windows Server File System:
+├── C:\inetpub\IntegralBackend\          # ← Backend API files
+│   ├── Integral.Backend.API.exe
+│   ├── appsettings.Production.json
+│   ├── web.config (auto-generated)
+│   └── All backend dependencies
+├── C:\inetpub\IntegralFrontend\         # ← Frontend UI files
+│   ├── Integral.Frontend.UI.exe
+│   ├── appsettings.Production.json
+│   ├── web.config (auto-generated)
+│   ├── wwwroot/ (CSS, JS, images)
+│   └── All frontend dependencies
+└── PostgreSQL Database (localhost)      # ← Separate service
+```
+
+#### Step C: IIS Configuration
+
+**Create Two Separate IIS Applications:**
+
+1. **Backend API Application:**
+   - **Site Name**: `Integral-Backend-API`
+   - **Physical Path**: `C:\inetpub\IntegralBackend`
+   - **Application Pool**: `IntegralBackendAPI`
+   - **Bindings**:
+     - HTTP: `api.integral.local:8080`
+     - HTTPS: `api.integral.local:8443`
+
+2. **Frontend UI Application:**
+   - **Site Name**: `Integral-Frontend-UI`
+   - **Physical Path**: `C:\inetpub\IntegralFrontend`
+   - **Application Pool**: `IntegralFrontendUI`
+   - **Bindings**:
+     - HTTP: `app.integral.local:8081`
+     - HTTPS: `app.integral.local:8444`
+
+#### Step D: How Communication Works
+
+**Runtime Communication Flow:**
+
+1. User visits `https://app.integral.local:8444`
+2. IIS serves Frontend UI from `C:\inetpub\IntegralFrontend`
+3. Frontend makes API calls to `https://api.integral.local:8443`
+4. IIS serves Backend API from `C:\inetpub\IntegralBackend`
+5. Backend connects to PostgreSQL at `localhost:5432`
+
+**Key Points:**
+
+- **Two separate processes** running on IIS
+- **Each has its own application pool** and resource isolation
+- **Service discovery works via configuration** (not Aspire's automatic discovery)
+- **Aspire's service defaults provide telemetry** in both applications
+
+---
+
+### Configuration Changes for IIS Deployment
+
+When deploying with Aspire service defaults to IIS, you'll need these configuration changes:
+
+#### Backend API Configuration Changes
+
+**appsettings.Production.json** (same as before, but note the service discovery):
+
+```json
+{
+  "ConnectionStrings": {
+    "PostgresConnection": "Host=localhost;Port=5432;Database=integral_db;Username=integral_user;Password=your_secure_password_here;SSL Mode=Disable;"
+  },
+  "ApiSettings": {
+    "FrontendBaseUrl": "https://app.integral.local:8444",
+    "BackendBaseUrl": "https://api.integral.local:8443"
+  },
+  "AllowedHosts": "api.integral.local;localhost"
+}
+```
+
+#### Frontend UI Configuration Changes
+
+**appsettings.Production.json** (updated with explicit API URL):
+
+```json
+{
+  "ApiSettings": {
+    "FrontendBaseUrl": "https://app.integral.local:8444",
+    "BackendBaseUrl": "https://api.integral.local:8443"
+  },
+  "AllowedHosts": "app.integral.local;localhost"
+}
+```
+
+#### Service Registration Updates
+
+**In your Backend API Program.cs** (after `AddServiceDefaults()`):
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+// Add Aspire service defaults (telemetry, health checks, etc.)
+builder.AddServiceDefaults();
+
+// Your existing service registrations...
+builder.Services.AddControllers();
+// ... other services
+
+var app = builder.Build();
+
+// Map Aspire service defaults (adds health check endpoints)
+app.MapDefaultEndpoints();
+
+// Your existing middleware...
+app.MapControllers();
+app.Run();
+```
+
+**In your Frontend UI Program.cs** (after `AddServiceDefaults()`):
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+// Add Aspire service defaults
+builder.AddServiceDefaults();
+
+// Configure API client with explicit URL (not service discovery)
+builder.Services.AddHttpClient("IntegralAPI", client =>
+{
+    var apiUrl = builder.Configuration.GetSection("ApiSettings:BackendBaseUrl").Value;
+    client.BaseAddress = new Uri(apiUrl);
+});
+
+// Your existing service registrations...
+builder.Services.AddRazorPages();
+// ... other services
+
+var app = builder.Build();
+
+// Map Aspire service defaults
+app.MapDefaultEndpoints();
+
+// Your existing middleware...
+app.MapRazorPages();
+app.Run();
+```
 
 ---
 
@@ -994,7 +1374,62 @@ Write-Host "Certificates exported to C:\temp\"
    - Click **Browse** → Select **Trusted Root Certification Authorities**
    - Click **Next** → **Finish**
 
-### 6.3 Test Database Connectivity
+### 6.4 Optional: Monitor Production with Aspire Dashboard
+
+If you integrated .NET Aspire service defaults into your applications, you can deploy the Aspire Dashboard separately to monitor your IIS-hosted applications:
+
+**Deploy Aspire Dashboard as Separate Application:**
+
+1. **Create Dashboard Project:**
+
+```powershell
+# On your development machine
+dotnet new web -n Integral.Dashboard
+cd Integral.Dashboard
+
+# Add Aspire Dashboard package
+dotnet add package Aspire.Dashboard --version 9.5.0
+```
+
+2. **Configure Dashboard Program.cs:**
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure Aspire Dashboard
+builder.Services.AddAspireDashboard();
+
+var app = builder.Build();
+
+// Use Aspire Dashboard middleware
+app.MapAspireDashboard();
+
+app.Run();
+```
+
+3. **Deploy Dashboard to IIS:**
+   - Publish and deploy like other applications
+   - Create separate application pool `IntegralDashboard`  
+   - Deploy to `C:\inetpub\IntegralDashboard`
+   - Configure on different port (e.g., 8445)
+
+4. **Access Production Monitoring:**
+   - Dashboard URL: `https://dashboard.integral.local:8445`
+   - View telemetry from both Backend API and Frontend UI
+   - Monitor health, metrics, and distributed traces
+
+### 6.5 Test Database Connectivity
+
+```sql
+-- Connect to PostgreSQL and verify
+psql -U integral_user -d integral_db -h localhost
+
+-- Check if tables exist
+\dt
+
+-- Exit
+\q
+```
 
 ```sql
 -- Connect to PostgreSQL and verify
@@ -1063,6 +1498,10 @@ After completing all steps, your Integral application will be accessible via:
 - HTTP: `http://api.integral.local:8080`
 - HTTPS: `https://api.integral.local:8443`
 
+**Optional Aspire Dashboard (if deployed):**
+
+- HTTPS: `https://dashboard.integral.local:8445`
+
 ### Network Access from Other Computers
 
 1. **Add to client computers' hosts file** (`C:\Windows\System32\drivers\etc\hosts`):
@@ -1070,6 +1509,7 @@ After completing all steps, your Integral application will be accessible via:
    ```conf
    192.168.1.100    api.integral.local
    192.168.1.100    app.integral.local
+   192.168.1.100    dashboard.integral.local
    ```
 
    *(Replace 192.168.1.100 with your server's IP address)*
